@@ -124,7 +124,7 @@ function App() {
 
         <div className='chat-main'>
           <div className='users-section'>
-            <h2>Online Users: {joined? 'Join to see':users.length}</h2>
+            <h2>Online Users: {joined? users.length:'Join to see'}</h2>
             {users.map((user)=>(<p>{user}</p>))}
           </div>
           <div className='chat-section'>
