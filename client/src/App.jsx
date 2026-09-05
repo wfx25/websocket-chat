@@ -52,7 +52,7 @@ function App() {
         setNotifications((prevNoti)=>[...prevNoti,message.message])}
 
       else if(message.type==="joinSuccess"){console.log("join success");setJoined(true);
-        setNotifications((p)=>[...p,`You've logged in as: ${message.username}`])
+        setNotifications((p)=>[...p,`You've joined as: ${message.username}`])
       }
 
     }
@@ -124,7 +124,7 @@ function App() {
 
         <div className='chat-main'>
           <div className='users-section'>
-            <h2>Online Users: {users.length}</h2>
+            <h2>Online Users: {joined? 'Join to see':users.length}</h2>
             {users.map((user)=>(<p>{user}</p>))}
           </div>
           <div className='chat-section'>
