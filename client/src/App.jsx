@@ -9,6 +9,7 @@ function App() {
   const [connected,setConnected]=useState(false)
   const [joined,setJoined]=useState(false)
   const [notifications,setNotifications]=useState([])
+  const [autoScroll, setAutoScroll]=useState(true)
   const socketRef=useRef(null)
   const messageEndRef=useRef(null)
 
@@ -32,7 +33,6 @@ function App() {
       console.log("Received:",message)
 
       //handle messages
-
       if(message.type==="userList"){setUsers(message.users)}
 
       else if(message.type==="join"){console.log(message.username,"has joined");
@@ -41,10 +41,14 @@ function App() {
       else if(message.type==="message"){
         setMessages((previousMessages)=>[...previousMessages,message])}
 
+      else if(message.type==="messageHistory"){
+        setMessages(message.messages)}
+
       else if(message.type==="leave"){console.log(message.username,"has left");
         setNotifications((prevNoti)=>[...prevNoti,`${message.username} has left the chat.`])}
 
-      else if(message.type==="error"){console.log("Get error message:",message.message);setJoined(false);
+      else if(message.type==="error"){console.log("Get error message:",message.message);
+        setJoined(false);
         setNotifications((prevNoti)=>[...prevNoti,message.message])}
 
       else if(message.type==="joinSuccess"){console.log("join success");setJoined(true);
@@ -58,7 +62,7 @@ function App() {
   },[])
 
   //implement auto scroll
-  useEffect(()=>{messageEndRef.current?.scrollIntoView();},[messages])
+  useEffect(()=>{autoScroll&&messageEndRef.current?.scrollIntoView();},[messages])
 
   //send message
   function handleClick(){
@@ -93,7 +97,7 @@ function App() {
       <div className='chat-app'>
 
         <h1>chat room</h1>
-        <p>Status: {connected? "Connected":"Disconnected"}</p>
+        <div className={connected? 'status-c':'status-d'}><p>Status: {connected? "Connected":"Disconnected"}</p></div>
 
         <div className='username-section'>
           <input
@@ -120,7 +124,7 @@ function App() {
 
         <div className='chat-main'>
           <div className='users-section'>
-            <h2>Online Users:{users.length}</h2>
+            <h2>Online Users: {users.length}</h2>
             {users.map((user)=>(<p>{user}</p>))}
           </div>
           <div className='chat-section'>
@@ -169,6 +173,9 @@ function App() {
           })}
         </div>
       </div>
+      <button onClick={()=>{setAutoScroll(autoScroll? false:true)}}>
+        Auto Scroll: {autoScroll? "on":"off"}
+      </button>
     </>
   )
 }

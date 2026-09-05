@@ -1,7 +1,15 @@
+
+//For test only, does not run in chatapp.
+
 const WebSocket=require("ws");
 const socket=new WebSocket("ws://localhost:8080");
 
 socket.on("open",()=>{
+    socket.send(JSON.stringify({
+        type:"join",
+        username:"",
+        test:"test"
+    }))
     console.log("connected to server!");
     console.log("enter your name:");
 });

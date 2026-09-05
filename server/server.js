@@ -1,12 +1,16 @@
 const WebSocket = require("ws");
-const server = new WebSocket.Server({port:8080});
+const server = new WebSocket.Server({
+  host: "0.0.0.0",
+  port: process.env.PORT || 8080
+});
 
 const users=new Map();
+const messages=[];
 
 //broadcast function
 function broadcast(message,excludedSocket){
   server.clients.forEach((client)=>{
-    if(client!==excludedSocket){
+    if(client!==excludedSocket&&users.has(client)){
       client.send(JSON.stringify(message))
     }
   });
@@ -17,7 +21,7 @@ server.on("connection", (socket) => {
 
   let username="";
 
-  console.log("There is a connected!");
+  console.log("There is a connection!");
 
 //monitor message
   socket.on("message",(message)=>{
@@ -25,13 +29,28 @@ server.on("connection", (socket) => {
     console.log("recieved:",message.toString());
     const chatMessage=JSON.parse(message.toString());
 
+    //send error message(no type), will disjoin the user
+    if(!chatMessage.type){
+      socket.send(JSON.stringify({
+        type:"error",
+        message:"No messagetype"
+      }));return}
+
   //handle join message
     if(chatMessage.type==="join"){
+
+      //send error message (no username), will disjoin this client
+      if(!chatMessage.username||chatMessage.username===""){
+        socket.send(JSON.stringify({
+          type:"error",
+          message:"No username!"
+        }));
+        return}
 
       username=chatMessage.username
       const userList=Array.from(users.values());
 
-      //send error message
+      //send error message (username already exist)
       if(userList.includes(username)){
         const illegalUserName={
           type:"error",
@@ -58,6 +77,10 @@ server.on("connection", (socket) => {
       };
       broadcast(userListMessage);
 
+      //send history message
+      const messageHistory={type:"messageHistory",messages:messages}
+      socket.send(JSON.stringify(messageHistory));
+
       //send join message
       const messageToSend={
         type:"join",
@@ -69,19 +92,22 @@ server.on("connection", (socket) => {
   //handle message
     else if(chatMessage.type==="message"){
 
+      if(!users.has(socket)){return}
+
       //send message
       const messageToSend={
         type:"message",
         username:users.get(socket),
         message:chatMessage.message
       };
+      messages.push(messageToSend);
       broadcast(messageToSend);
     }
 
   //handle other message
     else{
 
-      //send error message (will logout the user)
+      //send error message (will disjoin this client)
       socket.send(JSON.stringify({type:"error",message:"Unsupported message type!"}))
     }
   });
