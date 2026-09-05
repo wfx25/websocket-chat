@@ -14,7 +14,7 @@ function App() {
   const messageEndRef=useRef(null)
 
   useEffect(()=>{
-    const socket=new WebSocket("ws://localhost:8080")
+    const socket=new WebSocket("wss://websocket-chat-server-65e8.onrender.com")
     socketRef.current=socket
 
     socket.onopen=()=>{
