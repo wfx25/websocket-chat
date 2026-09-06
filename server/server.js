@@ -3,6 +3,13 @@ const server = new WebSocket.Server({
   host: "0.0.0.0",
   port: process.env.PORT || 8080
 });
+const heartbeat=setInterval(()=>{
+  server.clients.forEach((socket)=>{
+    if(!socket.isAlive){socket.terminate();return;}
+    socket.isAlive=false;
+    socket.ping();
+  });
+},10000);
 
 const users=new Map();
 const messages=[];
@@ -16,15 +23,34 @@ function broadcast(message,excludedSocket){
   });
 };
 
+// quick-ping function
+function checkAlive(socket){
+  return new Promise((resolve)=>{
+    if (socket.readyState !== socket.OPEN) return resolve(false);
+    const timer = setTimeout(() => {
+      socket.removeListener("pong", onPong);
+      resolve(false);
+    }, 2000);
+    function onPong(){
+      clearTimeout(timer);
+      resolve(true);
+    }
+    socket.once("pong",onPong);
+    socket.ping();
+  });
+}
+
 //monitor connection
 server.on("connection", (socket) => {
 
   let username="";
-
+  socket.isAlive=true;
   console.log("There is a connection!");
 
+  socket.on("pong",()=>{socket.isAlive=true});
+
 //monitor message
-  socket.on("message",(message)=>{
+  socket.on("message",async (message)=>{
 
     console.log("recieved:",message.toString());
     const chatMessage=JSON.parse(message.toString());
@@ -52,12 +78,16 @@ server.on("connection", (socket) => {
 
       //send error message (username already exist)
       if(userList.includes(username)){
-        const illegalUserName={
+        const oldSocket = [...users.entries()].find(([, name]) => name === username)[0];
+        const stillAlive=await checkAlive(oldSocket);
+        if(stillAlive){
+          const illegalUserName={
           type:"error",
           message:"Username already exist!"
         };
         socket.send(JSON.stringify(illegalUserName));
-        return
+        return;}
+        else{users.delete(oldSocket);oldSocket.terminate();}
       }
 
       users.set(socket,username);
@@ -135,3 +165,5 @@ server.on("connection", (socket) => {
     broadcast(messageToSend);
   });
 });
+
+server.on("close",()=>{clearInterval(heartbeat)});
