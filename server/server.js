@@ -11,8 +11,10 @@ const heartbeat=setInterval(()=>{
   });
   console.log("heartbeat tick, current users:", Array.from(users.values()));
 },10000);
+const crypto=require("crypto");
 
 const users=new Map();
+const sessionIds=new Map();
 const messages=[];
 
 //broadcast function
@@ -75,14 +77,23 @@ server.on("connection", (socket) => {
         return}
 
       username=chatMessage.username
+      sessionId=chatMessage.sessionId
       const userList=Array.from(users.values());
 
       //send error message (username already exist)
       if(userList.includes(username)){
-        console.log(`checking sockets with same usernames`);
+
+        console.log(`checking sockets with same usernames and comparing sessionIds`);
+
         const oldSocket = [...users.entries()].find(([, name]) => name === username)[0];
+        const oldSessionId=sessions.get(oldSocket).sessionId;
         const stillAlive=await checkAlive(oldSocket);
-        if(stillAlive){
+        
+        if(sessionId&&oldSessionId===sessionId){
+          console.log(`${username} continue session, deleting oldsocket`);
+          sessionIds.delete(oldSocket);users.delete(oldSocket);oldSocket.terminate();
+        }
+        else if(stillAlive){
           console.log(`an alive socket with same username found at ${users.get(oldSocket)}, oldSocket.readyState: ${oldSocket.readyState}`)
           const illegalUserName={
           type:"error",
@@ -92,15 +103,19 @@ server.on("connection", (socket) => {
         return;}
         else{console.log(`deleting oldsocket`);users.delete(oldSocket);oldSocket.terminate();}
       }
-
+      
+      const sessionId=chatMessage.sessionId||crypto.randomUUID();
       users.set(socket,username);
+      sessionIds.set(socket, sessionId);
       console.log(username,"has joined");
       console.log("user list:", Array.from(users.values()));
+      console.log(`${username} gets sessionId: ${sessionId}`);
 
       //send success message
       socket.send(JSON.stringify({
         type:"joinSuccess",
-        username:username
+        username:username,
+        sessionId:sessionId
       }))
 
       //send user list
@@ -118,6 +133,7 @@ server.on("connection", (socket) => {
       const messageToSend={
         type:"join",
         username:username,
+        sessionId:null
       };
       broadcast(messageToSend,socket);
     }
@@ -152,6 +168,7 @@ server.on("connection", (socket) => {
 
     users.delete(socket);
     console.log(username,"has left!")
+    console.log("user list:", Array.from(users.values()));
 
     //send user list
     const userListMessage={

@@ -10,21 +10,62 @@ function App() {
   const [joined,setJoined]=useState(false)
   const [notifications,setNotifications]=useState([])
   const [autoScroll, setAutoScroll]=useState(true)
+  
+  const shouldReconnectRef=useRef(true)
+  const reconnectTimerRef=useRef(null)
+  const reconnectDelayRef=useRef(1000)
+  const joinedRef=useRef(false)
   const socketRef=useRef(null)
+  const usernameRef=useRef("")
   const messageEndRef=useRef(null)
+  const sessionIdRef=useRef(null)
 
   useEffect(()=>{
+
+    shouldReconnectRef.current = true;
+    const closeSocket=connectWebSocket();
+
+    return ()=>{
+      shouldReconnectRef.current=false
+      closeSocket()
+      clearTimeout(reconnectTimerRef.current)
+    }
+
+  },[])
+
+  function connectWebSocket(){
+
     const socket=new WebSocket("wss://websocket-chat-server-65e8.onrender.com")
     socketRef.current=socket
+    let intentionalClose=false
+
+    function closeSocket(){
+      intentionalClose=true
+      socket.close()
+    }
 
     socket.onopen=()=>{
       console.log("WebSocket Connected!")
       setConnected(true)
+      reconnectDelayRef.current=1000
+
+      //send joinMessage if client already joined before reconnection
+      if(joinedRef.current){socket.send(JSON.stringify({type:"join",username:usernameRef.current,sessionId:sessionIdRef}))}
     }
     socket.onclose=()=>{
       console.log("WebSocket Disconnected!")
       setConnected(false)
+      if(intentionalClose){return}
+      if(shouldReconnectRef.current){
+        reconnectTimerRef.current=
+        setTimeout(()=>{
+          console.log(`trying to reconnect... next trial in ${Math.min(reconnectDelayRef.current,10000)/1000} s`);
+          connectWebSocket()
+        },reconnectDelayRef.current)
+        reconnectDelayRef.current=Math.min(reconnectDelayRef.current*2,10000)
+      }
     }
+
 
     //monitor messages
     socket.onmessage=(event)=>{
@@ -49,17 +90,18 @@ function App() {
 
       else if(message.type==="error"){console.log("Get error message:",message.message);
         setJoined(false);
+        joinedRef.current=false
         setNotifications((prevNoti)=>[...prevNoti,message.message])}
 
       else if(message.type==="joinSuccess"){console.log("join success");setJoined(true);
-        setNotifications((p)=>[...p,`You've joined as: ${message.username}`])
+        setNotifications((p)=>[...p,`You've joined as: ${message.username}`]);
+        joinedRef.current=true;
+        usernameRef.current=message.username;
+        sessionIdRef=message.sessionId
       }
-
     }
-    return ()=>{
-      socket.close()
-    }
-  },[])
+    return closeSocket;
+  }
 
   //implement auto scroll
   useEffect(()=>{autoScroll&&messageEndRef.current?.scrollIntoView();},[messages])
@@ -86,7 +128,8 @@ function App() {
 
     const joinMessage={
       type:"join",
-      username:username
+      username:username,
+      session:sessionIdRef
     }
     socketRef.current.send(JSON.stringify(joinMessage))
 
@@ -97,7 +140,11 @@ function App() {
       <div className='chat-app'>
 
         <h1>chat room</h1>
-        <div className={connected? 'status-c':'status-d'}><p>Status: {connected? "Connected":"Disconnected"}</p></div>
+        <div className='status-tab'>
+          <div className={connected? 'status-c':'status-d'}><p>Status: {connected? "Connected":"Disconnected"}</p>
+          </div>
+          <div><p>(if disconnected, wait for 10s!)</p></div>
+        </div>
 
         <div className='username-section'>
           <input
@@ -125,7 +172,7 @@ function App() {
         <div className='chat-main'>
           <div className='users-section'>
             <h2>Online Users: {joined? users.length:'Join to see'}</h2>
-            {users.map((user)=>(<p>{user}</p>))}
+            {users.map((user)=>(<p key={user}>{user}</p>))}
           </div>
           <div className='chat-section'>
             {joined && messages.map((message,index)=>(
