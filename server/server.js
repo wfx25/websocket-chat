@@ -9,6 +9,7 @@ const heartbeat=setInterval(()=>{
     socket.isAlive=false;
     socket.ping();
   });
+  console.log("heartbeat tick, current users:", Array.from(users.values()));
 },10000);
 
 const users=new Map();
@@ -78,16 +79,18 @@ server.on("connection", (socket) => {
 
       //send error message (username already exist)
       if(userList.includes(username)){
+        console.log(`checking sockets with same usernames`);
         const oldSocket = [...users.entries()].find(([, name]) => name === username)[0];
         const stillAlive=await checkAlive(oldSocket);
         if(stillAlive){
+          console.log(`an alive socket with same username found at ${users.get(oldSocket)}, oldSocket.readyState: ${oldSocket.readyState}`)
           const illegalUserName={
           type:"error",
           message:"Username already exist!"
         };
         socket.send(JSON.stringify(illegalUserName));
         return;}
-        else{users.delete(oldSocket);oldSocket.terminate();}
+        else{console.log(`deleting oldsocket`);users.delete(oldSocket);oldSocket.terminate();}
       }
 
       users.set(socket,username);
@@ -144,7 +147,7 @@ server.on("connection", (socket) => {
   
   //monitor leave
   socket.on("close",()=>{
-
+    
     if(username===""){return}
 
     users.delete(socket);
