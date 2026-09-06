@@ -89,9 +89,12 @@ function App() {
         setNotifications((prevNoti)=>[...prevNoti,`${message.username} has left the chat.`])}
 
       else if(message.type==="error"){console.log("Get error message:",message.message);
-        setJoined(false);
+        setJoined(false)
         joinedRef.current=false
-        setNotifications((prevNoti)=>[...prevNoti,message.message])}
+        setNotifications((prevNoti)=>[...prevNoti,message.message])
+        socket.send(JSON.stringify({type:"leave",username:username}))
+        setUsername("")
+      }
 
       else if(message.type==="joinSuccess"){console.log("join success");setJoined(true);
         setNotifications((p)=>[...p,`You've joined as: ${message.username}`]);
@@ -99,6 +102,7 @@ function App() {
         usernameRef.current=message.username;
         sessionIdRef.current=message.sessionId
       }
+      //else if(message.type==="rejoin"){setNotifications((p)=>[...p,`${message.username} has rejoined!`]);}
     }
     return closeSocket;
   }
@@ -129,7 +133,7 @@ function App() {
     const joinMessage={
       type:"join",
       username:username,
-      session:sessionIdRef.current
+      sessionId:sessionIdRef.current
     }
     socketRef.current.send(JSON.stringify(joinMessage))
 

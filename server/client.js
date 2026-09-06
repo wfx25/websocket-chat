@@ -1,73 +1,41 @@
 
 //For test only, does not run in chatapp.
 
-const WebSocket=require("ws");
-const socket=new WebSocket("ws://localhost:8080");
+const WebSocket = require("ws");
 
-socket.on("open",()=>{
-    socket.send(JSON.stringify({
-        type:"join",
-        username:"",
-        test:"test"
-    }))
-    console.log("connected to server!");
-    console.log("enter your name:");
-});
+const readline = require("readline");
 
-let username="";
+const ws = new WebSocket("ws://localhost:8080");
 
-process.stdin.on("data",(data)=>{
+ws.onopen = () => {
+  console.log("connected to server");
+  console.log("Enter to send,to quit, type /quit");
 
-    const input=data.toString().trim();
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
-    if(input===""){
-        return;
+  rl.on("line", (input) => {
+    if (input === "/quit") {
+      ws.close();
+      rl.close();
+      return;
     }
 
-    if(username===""){
-        username=input;
-        console.log("username set to:",username);
-        const joinMessage={
-            type:"join",
-            username:username
-        };
-        socket.send(JSON.stringify(joinMessage))
-        return
-    };
+    ws.send(input);
+    console.log("→ sent:", input);
+  });
+};
 
-    const chatMessage={
-        type:"message",
-        message:input
-    };
-    socket.send(JSON.stringify(chatMessage))
-});
+ws.onmessage = (event) => {
+  console.log("← server:", event.data);
+};
 
-//monitor message
-socket.on("message",(message)=>{
+ws.onerror = (err) => {
+  console.error("websocket error:", err);
+};
 
-    console.log("received:",message.toString());
-    const chatMessage=JSON.parse(message.toString());
-    
-    //error message
-    if(chatMessage.type==="error"){
-        username="";
-        console.log(chatMessage.message);
-    }
-    //join message
-    else if(chatMessage.type==="join"){
-        console.log("receive join message:",chatMessage.username)
-    }
-    //message
-    else if(chatMessage.type==="message"){
-        console.log(chatMessage.username,":",chatMessage.message);
-    }
-    //leave message
-    else if(chatMessage.type==="leave"){
-        console.log("receive leave message:",chatMessage.username);
-    }
-    //userList message
-    else if(chatMessage.type==="userList"){
-        console.log("receive userList message",chatMessage.users);
-    }
-});
-
+ws.onclose = () => {
+  console.log("disconnected");
+};

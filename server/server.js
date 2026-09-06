@@ -47,6 +47,7 @@ function checkAlive(socket){
 server.on("connection", (socket) => {
 
   let username="";
+  let joined=false;
   socket.isAlive=true;
   console.log("There is a connection!");
 
@@ -56,7 +57,9 @@ server.on("connection", (socket) => {
   socket.on("message",async (message)=>{
 
     console.log("recieved:",message.toString());
-    const chatMessage=JSON.parse(message.toString());
+
+    try{const chatMessage=JSON.parse(message.toString());
+    
 
     //send error message(no type), will disjoin the user
     if(!chatMessage.type){
@@ -66,10 +69,14 @@ server.on("connection", (socket) => {
       }));return}
 
   //handle join message
+  //all errors will disjoin the user
     if(chatMessage.type==="join"){
 
+      //send error message (already joined for this socket), will disjoin this client
+      if(joined){socket.send(JSON.stringify({type:"error",message:"muitiple join not allowed for one socket"}));return;}
+
       //send error message (no username), will disjoin this client
-      if(!chatMessage.username||chatMessage.username===""){
+      if(!chatMessage.username||chatMessage.username.trim()===""){
         socket.send(JSON.stringify({
           type:"error",
           message:"No username!"
@@ -85,27 +92,23 @@ server.on("connection", (socket) => {
         console.log(`checking sockets with same usernames and comparing sessionIds`);
 
         const oldSocket = [...users.entries()].find(([, name]) => name === username)[0];
-        const oldSessionId=sessionIds.get(oldSocket).sessionId;
-        const stillAlive=await checkAlive(oldSocket);
         
         if(chatMessage.sessionId && chatMessage.sessionId === sessionIds.get(oldSocket)){
           console.log(`${username} continue session, deleting oldsocket`);
           sessionIds.delete(oldSocket);users.delete(oldSocket);oldSocket.terminate();
         }
-        else if(stillAlive){
+        else if(await checkAlive(oldSocket)){
           console.log(`an alive socket with same username found at ${users.get(oldSocket)}, oldSocket.readyState: ${oldSocket.readyState}`)
-          const illegalUserName={
-          type:"error",
-          message:"Username already exist!"
-        };
-        socket.send(JSON.stringify(illegalUserName));
-        return;}
-        else{console.log(`deleting oldsocket`);users.delete(oldSocket);oldSocket.terminate();}
+          socket.send(JSON.stringify({type:"error",message:"Username already exist!"}));
+          username="";
+          return;}
+          else{console.log(`deleting oldsocket`);sessionIds.delete(oldSocket);users.delete(oldSocket);oldSocket.terminate();}
       }
       
       const sessionId=chatMessage.sessionId||crypto.randomUUID();
       users.set(socket,username);
       sessionIds.set(socket, sessionId);
+      joined=true;
       console.log(username,"has joined");
       console.log("user list:", Array.from(users.values()));
       console.log(`${username} gets sessionId: ${sessionId}`);
@@ -152,19 +155,36 @@ server.on("connection", (socket) => {
       broadcast(messageToSend);
     }
 
+  //handle leave message
+    else if(chatMessage.type==="leave"){
+      users.delete(socket)
+      sessionIds.delete(socket)
+      joined=false
+    }
+
   //handle other message
     else{
 
       //send error message (will disjoin this client)
       socket.send(JSON.stringify({type:"error",message:"Unsupported message type!"}))
     }
+  }catch(error){socket.send(JSON.stringify({type: "error",message: "Invalid JSON"}));}
   });
   
   //monitor leave
   socket.on("close",()=>{
-    
-    if(username===""){return}
+    console.log("there is a disconnection")
+    sessionIds.delete(socket)
+    if(username===""||!joined){console.log("disconnection:no username or not joined");return}
 
+    if(!users.get(socket)){
+      console.log("disconnection:not stored in users[]");
+      // const userList=Array.from(users.values);
+      // if(userList.includes(username)){
+      //   broadcast({type:"rejoin",username:username},
+      //     [...users.entries()].find(([, name]) => name === username)[0]);}
+      return;
+    }
     users.delete(socket);
     console.log(username,"has left!")
     console.log("user list:", Array.from(users.values()));
@@ -174,9 +194,9 @@ server.on("connection", (socket) => {
       type:"userList",
       users:Array.from(users.values())
     };
+    broadcast(userListMessage);
 
     //send leave message
-    broadcast(userListMessage);
     const messageToSend={
       type:"leave",
       username:username
