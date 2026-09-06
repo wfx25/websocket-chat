@@ -77,7 +77,6 @@ server.on("connection", (socket) => {
         return}
 
       username=chatMessage.username
-      sessionId=chatMessage.sessionId
       const userList=Array.from(users.values());
 
       //send error message (username already exist)
@@ -86,10 +85,10 @@ server.on("connection", (socket) => {
         console.log(`checking sockets with same usernames and comparing sessionIds`);
 
         const oldSocket = [...users.entries()].find(([, name]) => name === username)[0];
-        const oldSessionId=sessions.get(oldSocket).sessionId;
+        const oldSessionId=sessionIds.get(oldSocket).sessionId;
         const stillAlive=await checkAlive(oldSocket);
         
-        if(sessionId&&oldSessionId===sessionId){
+        if(chatMessage.sessionId && chatMessage.sessionId === sessionIds.get(oldSocket)){
           console.log(`${username} continue session, deleting oldsocket`);
           sessionIds.delete(oldSocket);users.delete(oldSocket);oldSocket.terminate();
         }

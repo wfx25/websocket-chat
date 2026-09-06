@@ -50,7 +50,7 @@ function App() {
       reconnectDelayRef.current=1000
 
       //send joinMessage if client already joined before reconnection
-      if(joinedRef.current){socket.send(JSON.stringify({type:"join",username:usernameRef.current,sessionId:sessionIdRef}))}
+      if(joinedRef.current){socket.send(JSON.stringify({type:"join",username:usernameRef.current,sessionId:sessionIdRef.current}))}
     }
     socket.onclose=()=>{
       console.log("WebSocket Disconnected!")
@@ -97,7 +97,7 @@ function App() {
         setNotifications((p)=>[...p,`You've joined as: ${message.username}`]);
         joinedRef.current=true;
         usernameRef.current=message.username;
-        sessionIdRef=message.sessionId
+        sessionIdRef.current=message.sessionId
       }
     }
     return closeSocket;
@@ -129,7 +129,7 @@ function App() {
     const joinMessage={
       type:"join",
       username:username,
-      session:sessionIdRef
+      session:sessionIdRef.current
     }
     socketRef.current.send(JSON.stringify(joinMessage))
 
