@@ -1,24 +1,54 @@
+:root {
+  --bg: #1f1e1e;
+  --surface: #1e1e1e;
+  --surface-2: #2a2a2a;
+  --surface-3: #2e2d2d;
+  --text: white;
+  --border: #555;
+  --border-light: #a2a0a0;
+  --button-hover: #444;
+  --placeholder: #888;
+  --c: greenyellow;
+  --my-message:rgb(12, 65, 51);
+  --other-message:rgb(131, 111, 111);
+}
+
+[data-theme="light"] {
+  --bg: #c8c6c6;
+  --surface: rgb(222, 222, 222);
+  --surface-2: #c5c5c5;
+  --surface-3: #b8e5b9;
+  --text: #222;
+  --border: #090909;
+  --border-light: #382e5d;
+  --button-hover: #b4a5a5;
+  --placeholder: #555;
+  --c: green;
+  --my-message: greenyellow;
+  --other-message:rgb(184, 184, 184);
+}
+
 body {
   margin: 0;
-  background-color: #1f1e1e;
-  color: white;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
 input {
-  background-color: #2a2a2a;
-  color: white;
-  border: 1px solid #555;
+  background-color: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
   padding: 8px;
 }
 
 button {
-  background-color: #2a2a2a;
-  color: white;
-  border: 1px solid #555;
+  background-color: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
   padding: 8px 14px;
 }
 button:hover:not(:disabled) {
-  background-color: #444;
+  background-color: var(--button-hover);
 }
 button:disabled {
   opacity: 0.5;
@@ -32,18 +62,21 @@ button:disabled {
 .chat-app {
   width: 900px;
   margin: 40px auto;
-  background-color: #1e1e1e;
-  border: 3px solid #a2a0a0;
+  background-color: var(--surface);
+  border: 3px solid var(--border-light);
   border-radius: 10px;
   overflow: hidden;
+  color: var(--text);
 }
 .chat-app h1{
   margin:0;
   padding:20px;
+  color: var(--text);
 }
 .chat-app > p{
   margin: 0;
   padding: 0 20px 15px;
+  color: var(--text);
 }
 .status-tab{
   display: flex;
@@ -51,24 +84,26 @@ button:disabled {
 .status-c{
   margin: 0;
   padding: 0 20px 0;
-  color: greenyellow;
+  color: var(--c);
 }
 .status-d{
   margin: 0;
   padding: 0 20px 0;
-  color: rgb(237, 135, 135);
+  color: rgb(234, 115, 115);
 }
 
 .username-section{
   display: flex;
   gap:8px;
   padding: 10px;
-  border-top: 2px solid #a2a0a0;
+  border-top: 2px solid var(--border-light);
 }
 .username-section input {
   flex: 1;
 }
-
+.username-section input::placeholder {
+  color: var(--placeholder);
+}
 
 .chat-main {
   display: flex;
@@ -79,13 +114,14 @@ button:disabled {
 .users-section{
   width: 170px;
   border-right: 1px solid #444;
-  background-color: #2e2d2d;
+  background-color: var(--surface-3);
   padding: 10px;
   overflow-y: auto;
 }
 .users-section h2{
   margin-top: 0;
   font-size: 18px;
+  color: var(--text);
 }
 .chat-section{
   flex:1;
@@ -97,10 +133,11 @@ button:disabled {
   display:flex;
   gap:8px;
   padding: 10px;
-  border-top: 1px solid #a2a0a0;
+  border-top: 1px solid var(--border-light);
 }
 .message-section input {
   flex: 1;
+  color: var(--text);
 }
 
 .my-message{
@@ -108,7 +145,7 @@ button:disabled {
   max-width: 70%;
   margin: 8px 0 8px auto;
   text-align: left;
-  background-color: rgb(12, 65, 51);
+  background-color: var(--my-message);
   padding: 8px 12px;
   border-radius: 10px;
   overflow-wrap: break-word;
@@ -118,7 +155,7 @@ button:disabled {
   max-width: 70%;
   margin: 8px auto 8px 0;
   text-align: left;
-  background-color: rgb(131, 111, 111);
+  background-color: var(--other-message);
   padding: 8px 12px;
   border-radius: 10px;
   overflow-wrap: break-word;
@@ -126,7 +163,7 @@ button:disabled {
 
 .notifications-section{
   padding: 10px;
-  border-top: 2px solid #a2a0a0;
+  border-top: 2px solid var(--border-light);
   max-height: 120px;
   overflow-y: auto;
 }

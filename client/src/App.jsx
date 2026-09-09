@@ -10,6 +10,7 @@ function App() {
   const [joined,setJoined]=useState(false)
   const [notifications,setNotifications]=useState([])
   const [autoScroll, setAutoScroll]=useState(true)
+  const [darkUI,setDarkUI]=useState(true)
   
   const shouldReconnectRef=useRef(true)
   const reconnectTimerRef=useRef(null)
@@ -110,6 +111,9 @@ function App() {
   //implement auto scroll
   useEffect(()=>{autoScroll&&messageEndRef.current?.scrollIntoView();},[messages])
 
+  //implement dark UI
+  useEffect(() => {document.documentElement.dataset.theme = darkUI?"dark":"light"}, [darkUI]);
+
   //send message
   function handleClick(){
 
@@ -141,15 +145,13 @@ function App() {
 
   return(
     <>
-      <div className='chat-app'>
-
+      <div className="chat-app">
         <h1>chat room</h1>
         <div className='status-tab'>
           <div className={connected? 'status-c':'status-d'}><p>Status: {connected? "Connected":"Disconnected"}</p>
           </div>
           <div><p>(if disconnected, wait for 10s!)</p></div>
         </div>
-
         <div className='username-section'>
           <input
             value={username}
@@ -171,8 +173,6 @@ function App() {
             {joined? "joined":"join"}
           </button>
         </div>
-
-
         <div className='chat-main'>
           <div className='users-section'>
             <h2>Online Users: {joined? users.length:'Join to see'}</h2>
@@ -191,7 +191,6 @@ function App() {
             <div ref={messageEndRef}></div>
           </div>
         </div>
-
         <div className='message-section'>
           <input
             value={message}
@@ -213,8 +212,6 @@ function App() {
             send message
           </button>
         </div>
-
-
         <div className='notifications-section'>
           <h2>Notifications</h2>
           {notifications.map((notification,index)=>{
@@ -223,10 +220,13 @@ function App() {
             )
           })}
         </div>
+        <button onClick={()=>{setAutoScroll(!autoScroll)}}>
+          Auto Scroll: {autoScroll? "on":"off"}
+        </button>
+        <button onClick={()=>{setDarkUI(!darkUI)}}>
+          UI: {darkUI?"Dark":"light"}
+        </button>
       </div>
-      <button onClick={()=>{setAutoScroll(autoScroll? false:true)}}>
-        Auto Scroll: {autoScroll? "on":"off"}
-      </button>
     </>
   )
 }
